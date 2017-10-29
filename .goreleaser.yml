@@ -1,0 +1,10 @@
+
+build:
+  main: cmd//kinesis-tail/main.go
+  binary: /kinesis-tail
+  goos:
+    - darwin
+    - linux
+    - windows
+  goarch:
+    - amd64
