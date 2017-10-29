@@ -19,7 +19,7 @@ type LogBatch struct {
 
 // LogMessage log message after decompression and parsing
 type LogMessage struct {
-	LogGroup  string
+	LogGroup  string // optional log group
 	Message   string
 	Timestamp string
 }

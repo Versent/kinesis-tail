@@ -6,13 +6,16 @@ import (
 	"os"
 	"runtime/trace"
 
+	"github.com/sirupsen/logrus"
+	"github.com/versent/kinesis-tail/pkg/rawdata"
+
 	"github.com/alecthomas/kingpin"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/kinesis"
 	"github.com/aws/aws-sdk-go/service/kinesis/kinesisiface"
 	"github.com/fatih/color"
-	"github.com/sirupsen/logrus"
+	"github.com/pkg/errors"
 	"github.com/versent/kinesis-tail/pkg/ktail"
 	"github.com/versent/kinesis-tail/pkg/logdata"
 	"github.com/versent/kinesis-tail/pkg/sorter"
@@ -23,19 +26,21 @@ var (
 	// Version program version which is updated via build flags
 	Version = "1.0.0"
 
-	tracing  = kingpin.Flag("trace", "Enable trace mode.").Short('t').Bool()
-	region   = kingpin.Flag("region", "Configure the aws region.").Short('r').String()
-	stream   = kingpin.Arg("stream", "Kinesis stream name.").Required().String()
-	includes = kingpin.Flag("include", "Include anything in log group names which match the supplied string.").Strings()
-	excludes = kingpin.Flag("exclude", "Exclude anything in log group names which match the supplied string.").Strings()
-	format   = kingpin.Flag("format", "Formatter used to output messages.").Default("cwlogs").Enum("cwlogs", "raw")
+	tracing       = kingpin.Flag("trace", "Enable trace mode.").Short('t').Bool()
+	region        = kingpin.Flag("region", "Configure the aws region.").Short('r').String()
+	cwlogsCommand = kingpin.Command("cwlogs", "Process cloudwatch logs data from kinesis.")
+	includes      = cwlogsCommand.Flag("include", "Include anything in log group names which match the supplied string.").Strings()
+	excludes      = cwlogsCommand.Flag("exclude", "Exclude anything in log group names which match the supplied string.").Strings()
+	cwlogsStream  = cwlogsCommand.Arg("stream", "Kinesis stream name.").Required().String()
+	rawCommand    = kingpin.Command("raw", "Process raw data from kinesis.")
+	rawStream     = rawCommand.Arg("stream", "Kinesis stream name.").Required().String()
+
+	logger = logrus.New()
 )
 
 func main() {
 	kingpin.Version(Version)
-	kingpin.Parse()
-
-	logger := logrus.New()
+	subCommand := kingpin.Parse()
 
 	if *tracing {
 		f, err := os.Create("trace.out")
@@ -65,37 +70,47 @@ func main() {
 
 	logger.Debug("built kinesis service")
 
-	helper := ktail.New(svc, logger)
-
-	iterators, err := helper.GetStreamIterators(*stream)
-	if err != nil {
-		logger.WithError(err).Fatal("get iterators failed")
+	switch subCommand {
+	case "cwlogs":
+		err := processLogData(svc, *cwlogsStream, *includes, *excludes)
+		if err != nil {
+			logger.WithError(err).Fatal("failed to process log data")
+		}
+	case "raw":
+		err := processRawData(svc, *rawStream)
+		if err != nil {
+			logger.WithError(err).Fatal("failed to process log data")
+		}
 	}
 
-	var messageSorter *sorter.MessageSorter
+}
 
-	switch *format {
-	case "raw":
-		messageSorter = sorter.New(os.Stdout, len(iterators), formatRawMsg)
-	case "cwlogs":
-		messageSorter = sorter.New(os.Stdout, len(iterators), formatLogsMsg)
+func processLogData(svc kinesisiface.KinesisAPI, stream string, includes []string, excludes []string) error {
+
+	helper := ktail.New(svc, logger)
+
+	iterators, err := helper.GetStreamIterators(stream)
+	if err != nil {
+		return errors.Wrap(err, "get iterators failed")
 	}
 
 	kstream := streamer.New(svc, iterators, 5000)
 	ch := kstream.StartGetRecords()
 
+	messageSorter := sorter.New(os.Stdout, len(iterators), formatLogsMsg)
+
 	for result := range ch {
 
 		if result.Err != nil {
-			logger.WithError(result.Err).Fatal("get records failed")
+			return errors.Wrap(result.Err, "get records failed")
 		}
 
 		msgResults := []*ktail.LogMessage{}
 
 		for _, rec := range result.Records {
-			msgs, err := logdata.UncompressLogs(*includes, *excludes, rec.ApproximateArrivalTimestamp, rec.Data)
+			msgs, err := logdata.UncompressLogs(includes, excludes, rec.ApproximateArrivalTimestamp, rec.Data)
 			if err != nil {
-				logger.WithError(err).Fatal("parse log records failed")
+				return errors.Wrap(err, "parse log records failed")
 			}
 
 			msgResults = append(msgResults, msgs...)
@@ -103,6 +118,41 @@ func main() {
 
 		messageSorter.PushBatch(msgResults)
 	}
+
+	return nil
+}
+
+func processRawData(svc kinesisiface.KinesisAPI, stream string) error {
+
+	helper := ktail.New(svc, logger)
+
+	iterators, err := helper.GetStreamIterators(stream)
+	if err != nil {
+		return errors.Wrap(err, "get iterators failed")
+	}
+
+	kstream := streamer.New(svc, iterators, 5000)
+	ch := kstream.StartGetRecords()
+
+	messageSorter := sorter.New(os.Stdout, len(iterators), formatRawMsg)
+
+	for result := range ch {
+
+		if result.Err != nil {
+			return errors.Wrap(result.Err, "get records failed")
+		}
+
+		msgResults := []*ktail.LogMessage{}
+
+		for _, rec := range result.Records {
+			msg := rawdata.DecodeRawData(rec.ApproximateArrivalTimestamp, rec.Data)
+			msgResults = append(msgResults, msg)
+		}
+
+		messageSorter.PushBatch(msgResults)
+	}
+
+	return nil
 }
 
 func formatRawMsg(wr io.Writer, msg *ktail.LogMessage) {
