@@ -25,7 +25,7 @@ import (
 
 var (
 	// Version program version which is updated via build flags
-	Version = "1.0.0"
+	version = "master"
 
 	tracing       = kingpin.Flag("trace", "Enable trace mode.").Short('t').Bool()
 	region        = kingpin.Flag("region", "Configure the aws region.").Short('r').String()
@@ -41,7 +41,7 @@ var (
 )
 
 func main() {
-	kingpin.Version(Version)
+	kingpin.Version(version)
 	subCommand := kingpin.Parse()
 
 	if *tracing {
