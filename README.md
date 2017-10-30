@@ -6,6 +6,8 @@ Tool which provides tail for [Kinesis](https://aws.amazon.com/kinesis/streams/),
 
 The cloudwatch logs reader is designed to work with a common pattern used at Versent for log distribution and storage.
 
+For more information on the setup for `cwlogs` sub command to function it assumes the logs are gzipped batches of log JSON records in Kinesis see [Real-time Processing of Log Data with Subscriptions](http://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/CreateDestination.html)
+
 # usage
 
 ```
