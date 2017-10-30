@@ -30,11 +30,11 @@ func UncompressLogs(includes []string, excludes []string, ts *time.Time, data []
 		return nil, errors.Wrap(err, "json decode failed")
 	}
 
-	if !matcher.MatchesTokens(includes, batch.LogGroup) {
+	if !matcher.MatchesTokens(includes, batch.LogGroup, true) {
 		return []*ktail.LogMessage{}, nil
 	}
 
-	if matcher.MatchesTokens(excludes, batch.LogGroup) {
+	if matcher.MatchesTokens(excludes, batch.LogGroup, false) {
 		return []*ktail.LogMessage{}, nil
 	}
 

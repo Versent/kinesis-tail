@@ -103,6 +103,8 @@ func processLogData(svc kinesisiface.KinesisAPI, stream string, includes []strin
 
 	for result := range ch {
 
+		logger.WithField("count", len(result.Records)).WithField("shard", result.Shard).Debug("received records")
+
 		if result.Err != nil {
 			return errors.Wrap(result.Err, "get records failed")
 		}
@@ -110,6 +112,7 @@ func processLogData(svc kinesisiface.KinesisAPI, stream string, includes []strin
 		msgResults := []*ktail.LogMessage{}
 
 		for _, rec := range result.Records {
+
 			msgs, err := logdata.UncompressLogs(includes, excludes, rec.ApproximateArrivalTimestamp, rec.Data)
 			if err != nil {
 				return errors.Wrap(err, "parse log records failed")
