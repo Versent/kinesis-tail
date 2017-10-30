@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"runtime/trace"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/versent/kinesis-tail/pkg/rawdata"
@@ -34,6 +35,7 @@ var (
 	cwlogsStream  = cwlogsCommand.Arg("stream", "Kinesis stream name.").Required().String()
 	rawCommand    = kingpin.Command("raw", "Process raw data from kinesis.")
 	rawStream     = rawCommand.Arg("stream", "Kinesis stream name.").Required().String()
+	timeout       = rawCommand.Flag("timeout", "How long to capture raw data for before exiting in ms.").Default("3600000").Int64()
 
 	logger = logrus.New()
 )
@@ -77,7 +79,7 @@ func main() {
 			logger.WithError(err).Fatal("failed to process log data")
 		}
 	case "raw":
-		err := processRawData(svc, *rawStream)
+		err := processRawData(svc, *rawStream, *timeout)
 		if err != nil {
 			logger.WithError(err).Fatal("failed to process log data")
 		}
@@ -122,7 +124,7 @@ func processLogData(svc kinesisiface.KinesisAPI, stream string, includes []strin
 	return nil
 }
 
-func processRawData(svc kinesisiface.KinesisAPI, stream string) error {
+func processRawData(svc kinesisiface.KinesisAPI, stream string, timeout int64) error {
 
 	helper := ktail.New(svc, logger)
 
@@ -136,20 +138,32 @@ func processRawData(svc kinesisiface.KinesisAPI, stream string) error {
 
 	messageSorter := sorter.New(os.Stdout, len(iterators), formatRawMsg)
 
-	for result := range ch {
+	timer1 := time.NewTimer(time.Duration(timeout) * time.Millisecond)
 
-		if result.Err != nil {
-			return errors.Wrap(result.Err, "get records failed")
+LOOP:
+	for {
+
+		select {
+		case result := <-ch:
+			if result.Err != nil {
+				return errors.Wrap(result.Err, "get records failed")
+			}
+
+			logger.WithField("count", len(result.Records)).WithField("shard", result.Shard).Info("received records")
+
+			msgResults := []*ktail.LogMessage{}
+
+			for _, rec := range result.Records {
+				msg := rawdata.DecodeRawData(rec.ApproximateArrivalTimestamp, rec.Data)
+				msgResults = append(msgResults, msg)
+			}
+
+			messageSorter.PushBatch(msgResults)
+		case <-timer1.C:
+			logger.Info("timer expired exit")
+			break LOOP
 		}
 
-		msgResults := []*ktail.LogMessage{}
-
-		for _, rec := range result.Records {
-			msg := rawdata.DecodeRawData(rec.ApproximateArrivalTimestamp, rec.Data)
-			msgResults = append(msgResults, msg)
-		}
-
-		messageSorter.PushBatch(msgResults)
 	}
 
 	return nil
