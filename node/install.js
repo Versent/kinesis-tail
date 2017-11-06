@@ -3,7 +3,7 @@ const fs = require('fs');
 const https = require('https');
 const zlib = require('zlib');
 
-const repo = 'Versent';
+const repo = 'versent';
 const project = 'kinesis-tail';
 
 const ver = process.argv[2];
