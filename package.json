@@ -4,10 +4,11 @@
   "description": "Utility which enables tailing of AWS kinesis streams.",
   "main": "index.js",
   "scripts": {
-    "preinstall": "node node/install.js 1.1.2"
+    "postinstall": "go-npm install",
+    "preuninstall": "go-npm uninstall"
   },
   "bin": {
-    "covalent-data": "./node/bin/kinesis-tail"
+    "kinesis-tail": "./node/bin/kinesis-tail"
   },
   "repository": {
     "type": "git",
@@ -24,6 +25,13 @@
     "url": "https://github.com/versent/kinesis-tail/issues"
   },
   "homepage": "https://github.com/versent/kinesis-tail#readme",
-  "devDependencies": {
+  "devDependencies": {},
+  "dependencies": {
+    "go-npm": "^0.1.8"
+  },
+  "goBinary": {
+    "name": "kinesis-tail",
+    "path": "./bin",
+    "url": "https://github.com/versent/kinesis-tail/releases/download/v{{version}}/kinesis-tail_{{version}}_{{platform}}_{{arch}}.tar.gz"
   }
 }
