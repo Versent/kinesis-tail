@@ -7,9 +7,6 @@
     "postinstall": "go-npm install",
     "preuninstall": "go-npm uninstall"
   },
-  "bin": {
-    "kinesis-tail": "./node/bin/kinesis-tail"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/versent/kinesis-tail.git"
