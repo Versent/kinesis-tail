@@ -11,7 +11,6 @@ For more information on the setup for `cwlogs` sub command to function it assume
 # usage
 
 ```
-$ kinesis-tail --help-long
 usage: kinesis-tail [<flags>] <command> [<args> ...]
 
 Flags:
@@ -31,8 +30,12 @@ Commands:
     --include=INCLUDE ...  Include anything in log group names which match the supplied string.
     --exclude=EXCLUDE ...  Exclude anything in log group names which match the supplied string.
 
-  raw <stream>
+  raw [<flags>] <stream>
     Process raw data from kinesis.
+
+    --timeout=3600000  How long to capture raw data for before exiting in ms.
+    --count=0          How many records to capture raw data for before exiting.
+
 
 ```
 
