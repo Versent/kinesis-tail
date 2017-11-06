@@ -36,6 +36,7 @@ var (
 	rawCommand    = kingpin.Command("raw", "Process raw data from kinesis.")
 	rawStream     = rawCommand.Arg("stream", "Kinesis stream name.").Required().String()
 	timeout       = rawCommand.Flag("timeout", "How long to capture raw data for before exiting in ms.").Default("3600000").Int64()
+	count         = rawCommand.Flag("count", "How many records to capture raw data for before exiting.").Default("0").Int()
 
 	logger = logrus.New()
 )
@@ -79,7 +80,7 @@ func main() {
 			logger.WithError(err).Fatal("failed to process log data")
 		}
 	case "raw":
-		err := processRawData(svc, *rawStream, *timeout)
+		err := processRawData(svc, *rawStream, *timeout, *count)
 		if err != nil {
 			logger.WithError(err).Fatal("failed to process log data")
 		}
@@ -127,7 +128,7 @@ func processLogData(svc kinesisiface.KinesisAPI, stream string, includes []strin
 	return nil
 }
 
-func processRawData(svc kinesisiface.KinesisAPI, stream string, timeout int64) error {
+func processRawData(svc kinesisiface.KinesisAPI, stream string, timeout int64, count int) error {
 
 	helper := ktail.New(svc, logger)
 
@@ -146,6 +147,8 @@ func processRawData(svc kinesisiface.KinesisAPI, stream string, timeout int64) e
 LOOP:
 	for {
 
+		var recordCount int
+
 		select {
 		case result := <-ch:
 			if result.Err != nil {
@@ -161,7 +164,16 @@ LOOP:
 				msgResults = append(msgResults, msg)
 			}
 
+			if count != 0 {
+				if recordCount == count {
+					logger.WithField("recordCount", recordCount).Info("reached count")
+					break LOOP
+				}
+			}
+
+			recordCount++
 			messageSorter.PushBatch(msgResults)
+
 		case <-timer1.C:
 			logger.Info("timer expired exit")
 			break LOOP
