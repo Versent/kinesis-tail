@@ -1,0 +1,29 @@
+{
+  "name": "kinesis-tail",
+  "version": "1.1.2",
+  "description": "Utility which enables tailing of AWS kinesis streams.",
+  "main": "index.js",
+  "scripts": {
+    "preinstall": "node node/install.js 1.1.2"
+  },
+  "bin": {
+    "covalent-data": "./node/bin/kinesis-tail"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/versent/kinesis-tail.git"
+  },
+  "keywords": [
+    "AWS",
+    "Kinesis",
+    "Golang"
+  ],
+  "author": "Mark Wolfe <mark.wolfe@versent.com.au>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/versent/kinesis-tail/issues"
+  },
+  "homepage": "https://github.com/versent/kinesis-tail#readme",
+  "devDependencies": {
+  }
+}
