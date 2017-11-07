@@ -58,7 +58,13 @@ aws kinesis list-streams
 To tail one of these streams and exit once you have captured 20 records.
 
 ```
-kinesis-tail raw vti-dev-1-stream --count 20
+kinesis-tail raw dev-1-stream --count 20
+```
+
+To tail one of these streams and exit after 30 seconds, and write the data to a file.
+
+```
+kinesis-tail raw dev-1-stream --timeout 30000 | tee data.log
 ```
 
 # license
