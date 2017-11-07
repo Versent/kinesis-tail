@@ -62,7 +62,10 @@ func main() {
 	}
 
 	if *debug {
+		// set debug globally
 		logrus.SetLevel(logrus.DebugLevel)
+		// set debug in the logger we already created
+		logger.SetLevel(logrus.DebugLevel)
 	}
 
 	sess := session.Must(session.NewSession())
