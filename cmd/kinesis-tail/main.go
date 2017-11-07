@@ -28,6 +28,7 @@ var (
 	version = "master"
 
 	tracing       = kingpin.Flag("trace", "Enable trace mode.").Short('t').Bool()
+	debug         = kingpin.Flag("debug", "Enable debug logging.").Short('d').Bool()
 	region        = kingpin.Flag("region", "Configure the aws region.").Short('r').String()
 	cwlogsCommand = kingpin.Command("cwlogs", "Process cloudwatch logs data from kinesis.")
 	includes      = cwlogsCommand.Flag("include", "Include anything in log group names which match the supplied string.").Strings()
@@ -58,6 +59,10 @@ func main() {
 
 		defer trace.Stop()
 
+	}
+
+	if *debug {
+		logrus.SetLevel(logrus.DebugLevel)
 	}
 
 	sess := session.Must(session.NewSession())
@@ -155,7 +160,7 @@ LOOP:
 				return errors.Wrap(result.Err, "get records failed")
 			}
 
-			logger.WithField("count", len(result.Records)).WithField("shard", result.Shard).Info("received records")
+			logger.WithField("count", len(result.Records)).WithField("shard", result.Shard).Debug("received records")
 
 			msgResults := []*ktail.LogMessage{}
 
@@ -166,7 +171,7 @@ LOOP:
 
 			if count != 0 {
 				if recordCount == count {
-					logger.WithField("recordCount", recordCount).Info("reached count")
+					logger.WithField("recordCount", recordCount).Info("reached count exit")
 					break LOOP
 				}
 			}

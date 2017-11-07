@@ -8,6 +8,14 @@ The cloudwatch logs reader is designed to work with a common pattern used at Ver
 
 For more information on the setup for `cwlogs` sub command to function it assumes the logs are gzipped batches of log JSON records in Kinesis see [Real-time Processing of Log Data with Subscriptions](http://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/CreateDestination.html)
 
+# installation
+
+You can download `kinesis-tail` from [Releases](https://github.com/Versent/kinesis-tail/releases) or install it using npm.
+
+```
+npm install kinesis-tail -g
+```
+
 # usage
 
 ```
@@ -37,6 +45,20 @@ Commands:
     --count=0          How many records to capture raw data for before exiting.
 
 
+```
+
+# example
+
+List the kinesis streams in your account.
+
+```
+aws kinesis list-streams
+```
+
+To tail one of these streams and exit once you have captured 20 records.
+
+```
+kinesis-tail raw vti-dev-1-stream --count 20
 ```
 
 # license
