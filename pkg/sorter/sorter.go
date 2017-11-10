@@ -34,12 +34,8 @@ func (lms *MessageSorter) PushBatch(logMessageBatch []*ktail.LogMessage) bool {
 	return lms.flushCheck()
 }
 
-func (lms *MessageSorter) flushCheck() bool {
-	lms.current++
-
-	if lms.current != lms.batchSize {
-		return false
-	}
+// Flush force a flush of messages
+func (lms *MessageSorter) Flush() {
 	sort.Sort(ktail.ByTimestamp(lms.cache))
 
 	for _, msg := range lms.cache {
@@ -48,6 +44,16 @@ func (lms *MessageSorter) flushCheck() bool {
 
 	lms.cache = []*ktail.LogMessage{}
 	lms.current = 0
+}
+
+func (lms *MessageSorter) flushCheck() bool {
+	lms.current++
+
+	if lms.current != lms.batchSize {
+		return false
+	}
+
+	lms.Flush()
 
 	return true
 }

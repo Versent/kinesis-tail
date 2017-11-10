@@ -152,6 +152,10 @@ func processRawData(svc kinesisiface.KinesisAPI, stream string, timeout int64, c
 
 	timer1 := time.NewTimer(time.Duration(timeout) * time.Millisecond)
 
+	if count > 0 {
+		logger.WithField("count", count).Debug("waiting for records")
+	}
+
 LOOP:
 	for {
 
@@ -172,15 +176,18 @@ LOOP:
 				msgResults = append(msgResults, msg)
 			}
 
+			messageSorter.PushBatch(msgResults)
+
+			recordCount = recordCount + len(result.Records)
+
 			if count != 0 {
-				if recordCount == count {
+				if recordCount >= count {
+					messageSorter.Flush()
+
 					logger.WithField("recordCount", recordCount).Info("reached count exit")
 					break LOOP
 				}
 			}
-
-			recordCount++
-			messageSorter.PushBatch(msgResults)
 
 		case <-timer1.C:
 			logger.Info("timer expired exit")
