@@ -12,6 +12,7 @@ setup:
 	go get -u golang.org/x/tools/cmd/cover
 	go get github.com/vektra/mockery/...
 	gometalinter --install
+	dep ensure
 .PHONY: setup
 
 # Install from source.
@@ -36,7 +37,7 @@ lint:
 .PHONY: lint
 
 # Run all the tests and code checks
-ci: test lint
+ci: setup test lint
 .PHONY: ci
 
 # Release binaries to GitHub.
@@ -49,5 +50,3 @@ release:
 generate-mocks:
 	mockery -dir ../../aws/aws-sdk-go/service/lambda/lambdaiface --all
 .PHONY: generate-mocks
-
-.PHONY: setup test cover generate-mocks

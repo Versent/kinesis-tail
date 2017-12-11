@@ -1,4 +1,4 @@
-# kinesis-tail
+# kinesis-tail [![Build Status](https://travis-ci.org/Versent/kinesis-tail?branch=master)](https://travis-ci.org/Versent/kinesis-tail)
 
 Tool which provides tail for [Kinesis](https://aws.amazon.com/kinesis/streams/), it allows you to use one of two processors for the data returned, firstly one which decompresses and parses [CloudWatch Logs](http://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/WhatIsCloudWatchLogs.html) data, and secondly one which just returns the raw data.
 
