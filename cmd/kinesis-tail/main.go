@@ -200,10 +200,16 @@ LOOP:
 }
 
 func formatRawMsg(wr io.Writer, msg *ktail.LogMessage) {
-	fmt.Fprintln(wr, msg.Message)
+	_, err := fmt.Fprintln(wr, msg.Message)
+	if err != nil {
+		logger.WithError(err).Fatal("failed to create trace file")
+	}
 }
 
 func formatLogsMsg(wr io.Writer, msg *ktail.LogMessage) {
 	c := color.New(color.FgBlue)
-	fmt.Fprintf(wr, "%s %s\n", c.Sprintf("[%s %s]", msg.Timestamp, msg.LogGroup), msg.Message)
+	_, err := fmt.Fprintf(wr, "%s %s\n", c.Sprintf("[%s %s]", msg.Timestamp, msg.LogGroup), msg.Message)
+	if err != nil {
+		logger.WithError(err).Fatal("failed to create trace file")
+	}
 }

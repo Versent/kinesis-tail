@@ -1,0 +1,15 @@
+language: go
+go:
+    - 1.9
+
+go_import_path: github.com/versent/kinesis-tail
+
+install:
+    - echo noop
+
+env:
+    - "PATH=/home/travis/gopath/bin:$PATH"
+
+script:
+    - make ci
+
