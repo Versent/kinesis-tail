@@ -156,10 +156,10 @@ func processRawData(svc kinesisiface.KinesisAPI, stream string, timeout int64, c
 		logger.WithField("count", count).Debug("waiting for records")
 	}
 
+	var recordCount int
+
 LOOP:
 	for {
-
-		var recordCount int
 
 		select {
 		case result := <-ch:
