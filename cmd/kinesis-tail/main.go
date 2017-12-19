@@ -167,7 +167,11 @@ LOOP:
 				return errors.Wrap(result.Err, "get records failed")
 			}
 
-			logger.WithField("count", len(result.Records)).WithField("shard", result.Shard).Debug("received records")
+			logger.WithFields(logrus.Fields{
+				"count": len(result.Records),
+				"total": recordCount,
+				"shard": result.Shard,
+			}).Debug("received records")
 
 			msgResults := []*ktail.LogMessage{}
 
@@ -178,7 +182,7 @@ LOOP:
 
 			messageSorter.PushBatch(msgResults)
 
-			recordCount = recordCount + len(result.Records)
+			recordCount += len(result.Records)
 
 			if count != 0 {
 				if recordCount >= count {
