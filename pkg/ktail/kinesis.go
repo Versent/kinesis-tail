@@ -1,6 +1,8 @@
 package ktail
 
 import (
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/kinesis"
 	"github.com/aws/aws-sdk-go/service/kinesis/kinesisiface"
@@ -28,7 +30,19 @@ func New(svc kinesisiface.KinesisAPI, logger *logrus.Logger) *KinesisHelper {
 }
 
 // GetStreamIterators build a list of iterators for the stream
-func (kh *KinesisHelper) GetStreamIterators(streamName string) (map[string]*string, error) {
+func (kh *KinesisHelper) GetStreamIterators(streamName string, timestamp int64) (map[string]*string, error) {
+
+	var ts time.Time
+
+	if timestamp > 0 {
+		tsec := timestamp / 1000
+		tnano := (timestamp % 1000) * 1000
+		ts = time.Unix(tsec, tnano)
+	} else {
+		ts = time.Now()
+	}
+
+	kh.logger.WithField("ts", ts.Unix()).Info("starting stream")
 
 	respDesc, err := kh.svc.DescribeStream(&kinesis.DescribeStreamInput{
 		StreamName: aws.String(streamName),
@@ -42,7 +56,7 @@ func (kh *KinesisHelper) GetStreamIterators(streamName string) (map[string]*stri
 	iterators := map[string]*string{}
 
 	for _, shard := range respDesc.StreamDescription.Shards {
-		go kh.asyncGetShardIterator(streamName, aws.StringValue(shard.ShardId), ch)
+		go kh.asyncGetShardIterator(streamName, aws.StringValue(shard.ShardId), ts, ch)
 	}
 
 	for range respDesc.StreamDescription.Shards {
@@ -54,13 +68,14 @@ func (kh *KinesisHelper) GetStreamIterators(streamName string) (map[string]*stri
 	return iterators, nil
 }
 
-func (kh *KinesisHelper) asyncGetShardIterator(streamName, shardID string, ch chan *iteratorResult) {
+func (kh *KinesisHelper) asyncGetShardIterator(streamName, shardID string, ts time.Time, ch chan *iteratorResult) {
 	kh.logger.WithField("shard", shardID).Debug("get shard iterator")
 
 	respShard, err := kh.svc.GetShardIterator(&kinesis.GetShardIteratorInput{
 		StreamName:        aws.String(streamName),
 		ShardIteratorType: aws.String(kinesis.ShardIteratorTypeLatest),
 		ShardId:           aws.String(shardID),
+		Timestamp:         aws.Time(ts),
 	})
 	if err != nil {
 		kh.logger.WithError(err).Fatal("get shard iterator failed")
