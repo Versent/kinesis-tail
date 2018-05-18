@@ -4,6 +4,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/aws/aws-sdk-go/service/kinesis"
 	"github.com/aws/aws-sdk-go/service/kinesis/kinesisiface"
 	"github.com/pkg/errors"
@@ -15,6 +17,7 @@ type KinesisStreamer struct {
 	iterators     map[string]*string
 	iteratorMutex *sync.Mutex
 	pollFreqMs    int64
+	logger        *logrus.Logger
 }
 
 // GetRecordsEntry returns the results of the last get records request
@@ -26,12 +29,13 @@ type GetRecordsEntry struct {
 }
 
 // New return a new configured streamer
-func New(svc kinesisiface.KinesisAPI, iterators map[string]*string, pollFreqMs int64) *KinesisStreamer {
+func New(svc kinesisiface.KinesisAPI, iterators map[string]*string, pollFreqMs int64, logger *logrus.Logger) *KinesisStreamer {
 	return &KinesisStreamer{
 		svc:           svc,
 		iterators:     iterators,
 		pollFreqMs:    pollFreqMs,
 		iteratorMutex: &sync.Mutex{},
+		logger:        logger,
 	}
 }
 
@@ -53,6 +57,11 @@ func (ks *KinesisStreamer) asyncGetRecords(shard string, ch chan *GetRecordsEntr
 
 	for now := range c {
 
+		if ks.iterators[shard] == nil {
+			ks.logger.Debug("nil iterator for shard as it is CLOSED: %s", shard)
+			continue
+		}
+
 		resp, err := ks.svc.GetRecords(&kinesis.GetRecordsInput{
 			ShardIterator: ks.iterators[shard],
 		})
@@ -60,7 +69,7 @@ func (ks *KinesisStreamer) asyncGetRecords(shard string, ch chan *GetRecordsEntr
 			ch <- &GetRecordsEntry{Created: now, Shard: shard, Err: errors.Wrap(err, "get records failed")}
 		}
 
-		//logger.WithField("iterator", aws.StringValue(iterator)).Info("get records shard")
+		ks.logger.WithField("iterator", resp).Debug("get records shard")
 
 		ch <- &GetRecordsEntry{Created: now, Shard: shard, Records: resp.Records}
 

@@ -6,13 +6,12 @@ GO ?= go
 
 # Install all the build and lint dependencies
 setup:
-	go get -u github.com/alecthomas/gometalinter
-	go get -u github.com/golang/dep/cmd/dep
-	go get -u github.com/pierrre/gotestcover
-	go get -u golang.org/x/tools/cmd/cover
-	go get github.com/vektra/mockery/...
-	gometalinter --install
-	dep ensure
+	@$(GO) get -u github.com/alecthomas/gometalinter
+	@$(GO) get -u github.com/golang/dep/cmd/dep
+	@$(GO) get -u github.com/axw/gocov/...
+	@$(GO) get github.com/vektra/mockery/...
+	@gometalinter --install
+	@dep ensure
 .PHONY: setup
 
 # Install from source.
@@ -23,17 +22,12 @@ install:
 
 # Run all the tests
 test:
-	@gotestcover $(TEST_OPTIONS) -covermode=atomic -coverprofile=coverage.txt $(SOURCE_FILES) -run $(TEST_PATTERN) -timeout=2m
+	@gocov test -timeout=2m ./... | gocov report
 .PHONY: test
-
-# Run all the tests and opens the coverage report
-cover: test
-	@$(GO) tool cover -html=coverage.txt
-.PHONY: cover
 
 # Run all the linters
 lint:
-	gometalinter --vendor ./...
+	gometalinter --deadline 300s --vendor ./...
 .PHONY: lint
 
 # Run all the tests and code checks

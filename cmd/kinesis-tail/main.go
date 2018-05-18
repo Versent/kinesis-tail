@@ -12,6 +12,7 @@ import (
 
 	"github.com/alecthomas/kingpin"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/kinesis"
 	"github.com/aws/aws-sdk-go/service/kinesis/kinesisiface"
@@ -30,6 +31,8 @@ var (
 	tracing       = kingpin.Flag("trace", "Enable trace mode.").Short('t').Bool()
 	debug         = kingpin.Flag("debug", "Enable debug logging.").Short('d').Bool()
 	region        = kingpin.Flag("region", "Configure the aws region.").Short('r').String()
+	profile       = kingpin.Flag("profile", "Configure the aws profile.").Short('p').String()
+	timestamp     = kingpin.Flag("timestamp", "Start time in epoch milliseconds.").Short('T').Int64()
 	cwlogsCommand = kingpin.Command("cwlogs", "Process cloudwatch logs data from kinesis.")
 	includes      = cwlogsCommand.Flag("include", "Include anything in log group names which match the supplied string.").Strings()
 	excludes      = cwlogsCommand.Flag("exclude", "Exclude anything in log group names which match the supplied string.").Strings()
@@ -58,7 +61,6 @@ func main() {
 		}
 
 		defer trace.Stop()
-
 	}
 
 	if *debug {
@@ -68,27 +70,18 @@ func main() {
 		logger.SetLevel(logrus.DebugLevel)
 	}
 
-	sess := session.Must(session.NewSession())
-
-	var svc kinesisiface.KinesisAPI
-
-	if *region == "" {
-		svc = kinesis.New(sess)
-	} else {
-		// Create a Kinesis client with additional configuration
-		svc = kinesis.New(sess, aws.NewConfig().WithRegion(*region))
-	}
+	svc := newKinesis(region, profile)
 
 	logger.Debug("built kinesis service")
 
 	switch subCommand {
 	case "cwlogs":
-		err := processLogData(svc, *cwlogsStream, *includes, *excludes)
+		err := processLogData(svc, *cwlogsStream, *timestamp, *includes, *excludes)
 		if err != nil {
 			logger.WithError(err).Fatal("failed to process log data")
 		}
 	case "raw":
-		err := processRawData(svc, *rawStream, *timeout, *count)
+		err := processRawData(svc, *rawStream, *timeout, *timestamp, *count)
 		if err != nil {
 			logger.WithError(err).Fatal("failed to process log data")
 		}
@@ -96,16 +89,16 @@ func main() {
 
 }
 
-func processLogData(svc kinesisiface.KinesisAPI, stream string, includes []string, excludes []string) error {
+func processLogData(svc kinesisiface.KinesisAPI, stream string, timestamp int64, includes []string, excludes []string) error {
 
 	helper := ktail.New(svc, logger)
 
-	iterators, err := helper.GetStreamIterators(stream)
+	iterators, err := helper.GetStreamIterators(stream, timestamp)
 	if err != nil {
 		return errors.Wrap(err, "get iterators failed")
 	}
 
-	kstream := streamer.New(svc, iterators, 5000)
+	kstream := streamer.New(svc, iterators, 5000, logger)
 	ch := kstream.StartGetRecords()
 
 	messageSorter := sorter.New(os.Stdout, len(iterators), formatLogsMsg)
@@ -136,16 +129,16 @@ func processLogData(svc kinesisiface.KinesisAPI, stream string, includes []strin
 	return nil
 }
 
-func processRawData(svc kinesisiface.KinesisAPI, stream string, timeout int64, count int) error {
+func processRawData(svc kinesisiface.KinesisAPI, stream string, timeout int64, timestamp int64, count int) error {
 
 	helper := ktail.New(svc, logger)
 
-	iterators, err := helper.GetStreamIterators(stream)
+	iterators, err := helper.GetStreamIterators(stream, timestamp)
 	if err != nil {
 		return errors.Wrap(err, "get iterators failed")
 	}
 
-	kstream := streamer.New(svc, iterators, 5000)
+	kstream := streamer.New(svc, iterators, 5000, logger)
 	ch := kstream.StartGetRecords()
 
 	messageSorter := sorter.New(os.Stdout, len(iterators), formatRawMsg)
@@ -216,4 +209,20 @@ func formatLogsMsg(wr io.Writer, msg *ktail.LogMessage) {
 	if err != nil {
 		logger.WithError(err).Fatal("failed to create trace file")
 	}
+}
+
+func newKinesis(region, profile *string) kinesisiface.KinesisAPI {
+	sess := session.Must(session.NewSession())
+
+	cfg := aws.NewConfig()
+
+	if aws.StringValue(region) != "" {
+		cfg = cfg.WithRegion(*region)
+	}
+
+	if aws.StringValue(profile) != "" {
+		cfg = cfg.WithCredentials(credentials.NewSharedCredentials("", *profile))
+	}
+
+	return kinesis.New(sess, cfg)
 }

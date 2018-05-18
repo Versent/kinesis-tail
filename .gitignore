@@ -4,3 +4,4 @@ console.log
 trace.out
 dist
 node_modules
+/bin
