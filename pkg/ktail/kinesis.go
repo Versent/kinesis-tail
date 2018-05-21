@@ -32,17 +32,9 @@ func New(svc kinesisiface.KinesisAPI, logger *logrus.Logger) *KinesisHelper {
 // GetStreamIterators build a list of iterators for the stream
 func (kh *KinesisHelper) GetStreamIterators(streamName string, timestamp int64) (map[string]*string, error) {
 
-	var ts time.Time
+	ts := buildTimestamp(timestamp)
 
-	if timestamp > 0 {
-		tsec := timestamp / 1000
-		tnano := (timestamp % 1000) * 1000
-		ts = time.Unix(tsec, tnano)
-	} else {
-		ts = time.Now()
-	}
-
-	kh.logger.WithField("ts", ts.Unix()).Info("starting stream")
+	kh.logger.WithField("ts", ts.UnixNano()).Info("starting stream")
 
 	respDesc, err := kh.svc.DescribeStream(&kinesis.DescribeStreamInput{
 		StreamName: aws.String(streamName),
@@ -82,4 +74,15 @@ func (kh *KinesisHelper) asyncGetShardIterator(streamName, shardID string, ts ti
 	}
 
 	ch <- &iteratorResult{shardID: shardID, iterator: respShard.ShardIterator}
+}
+
+func buildTimestamp(timestamp int64) time.Time {
+
+	ts := time.Now()
+
+	if timestamp > 0 {
+		ts = time.Unix(0, timestamp*1e6)
+	}
+
+	return ts
 }

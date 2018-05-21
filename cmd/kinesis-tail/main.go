@@ -72,7 +72,7 @@ func main() {
 
 	svc := newKinesis(region, profile)
 
-	logger.Debug("built kinesis service")
+	logger.WithField("timestamp", *timestamp).Debug("built kinesis service")
 
 	switch subCommand {
 	case "cwlogs":
