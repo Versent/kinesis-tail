@@ -1,6 +1,6 @@
 {
   "name": "@versent/kinesis-tail",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Utility which enables tailing of AWS kinesis streams.",
   "main": "index.js",
   "scripts": {
