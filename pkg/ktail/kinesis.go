@@ -65,7 +65,7 @@ func (kh *KinesisHelper) asyncGetShardIterator(streamName, shardID string, ts ti
 
 	respShard, err := kh.svc.GetShardIterator(&kinesis.GetShardIteratorInput{
 		StreamName:        aws.String(streamName),
-		ShardIteratorType: aws.String(kinesis.ShardIteratorTypeLatest),
+		ShardIteratorType: aws.String(kinesis.ShardIteratorTypeAtTimestamp),
 		ShardId:           aws.String(shardID),
 		Timestamp:         aws.Time(ts),
 	})
