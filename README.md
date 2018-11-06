@@ -13,7 +13,7 @@ For more information on the setup for `cwlogs` sub command to function it assume
 You can download `kinesis-tail` from [Releases](https://github.com/Versent/kinesis-tail/releases) or install it using npm.
 
 ```
-npm install kinesis-tail -g
+npm install @versent/kinesis-tail -g
 ```
 
 # usage
