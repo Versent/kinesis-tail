@@ -58,7 +58,7 @@ func (ks *KinesisStreamer) asyncGetRecords(shard string, ch chan *GetRecordsEntr
 	for now := range c {
 
 		if ks.iterators[shard] == nil {
-			ks.logger.Debug("nil iterator for shard as it is CLOSED: %s", shard)
+			ks.logger.Debugf("nil iterator for shard as it is CLOSED: %s", shard)
 			continue
 		}
 
