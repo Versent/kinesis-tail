@@ -5,3 +5,4 @@ trace.out
 dist
 node_modules
 /bin
+.idea/

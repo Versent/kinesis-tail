@@ -9,6 +9,7 @@ install:
 
 env:
     - "PATH=/home/travis/gopath/bin:$PATH"
+    - "GO111MODULE=on"
 
 script:
     - make ci
