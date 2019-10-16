@@ -6,12 +6,11 @@ GO ?= go
 
 # Install all the build and lint dependencies
 setup:
-	@$(GO) get -u github.com/alecthomas/gometalinter
-	@$(GO) get -u github.com/golang/dep/cmd/dep
+	@curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| \
+		sh -s -- -b $(GOPATH)/bin v1.20.0
 	@$(GO) get -u github.com/axw/gocov/...
 	@$(GO) get github.com/vektra/mockery/...
-	@gometalinter --install
-	@dep ensure
+	@go mod download
 .PHONY: setup
 
 # Install from source.
@@ -27,7 +26,7 @@ test:
 
 # Run all the linters
 lint:
-	gometalinter --deadline 300s --vendor ./...
+	$(GOPATH)/bin/golangci-lint run
 .PHONY: lint
 
 # Run all the tests and code checks

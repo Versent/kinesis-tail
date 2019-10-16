@@ -53,9 +53,9 @@ func (ks *KinesisStreamer) StartGetRecords() chan *GetRecordsEntry {
 
 func (ks *KinesisStreamer) asyncGetRecords(shard string, ch chan *GetRecordsEntry) {
 
-	c := time.Tick(time.Duration(ks.pollFreqMs) * time.Millisecond)
+	c := time.NewTicker(time.Duration(ks.pollFreqMs) * time.Millisecond)
 
-	for now := range c {
+	for now := range c.C {
 
 		if ks.iterators[shard] == nil {
 			ks.logger.Debugf("nil iterator for shard as it is CLOSED: %s", shard)

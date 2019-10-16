@@ -8,7 +8,7 @@ install:
     - echo noop
 
 env:
-    - "PATH=/home/travis/gopath/bin:$PATH"
+    - "PATH=/home/travis/gopath/bin:$PATH GO111MODULE=on"
 
 script:
     - make ci
