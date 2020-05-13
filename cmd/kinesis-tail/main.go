@@ -86,11 +86,9 @@ func main() {
 			logger.WithError(err).Fatal("failed to process log data")
 		}
 	}
-
 }
 
-func processLogData(svc kinesisiface.KinesisAPI, stream string, timestamp int64, includes []string, excludes []string) error {
-
+func processLogData(svc kinesisiface.KinesisAPI, stream string, timestamp int64, includes, excludes []string) error {
 	helper := ktail.New(svc, logger)
 
 	iterators, err := helper.GetStreamIterators(stream, timestamp)
@@ -104,7 +102,6 @@ func processLogData(svc kinesisiface.KinesisAPI, stream string, timestamp int64,
 	messageSorter := sorter.New(os.Stdout, len(iterators), formatLogsMsg)
 
 	for result := range ch {
-
 		logger.WithField("count", len(result.Records)).WithField("shard", result.Shard).Debug("received records")
 
 		if result.Err != nil {
@@ -114,7 +111,6 @@ func processLogData(svc kinesisiface.KinesisAPI, stream string, timestamp int64,
 		msgResults := []*ktail.LogMessage{}
 
 		for _, rec := range result.Records {
-
 			msgs, err := logdata.UncompressLogs(includes, excludes, rec.ApproximateArrivalTimestamp, rec.Data)
 			if err != nil {
 				return errors.Wrap(err, "parse log records failed")
@@ -129,8 +125,7 @@ func processLogData(svc kinesisiface.KinesisAPI, stream string, timestamp int64,
 	return nil
 }
 
-func processRawData(svc kinesisiface.KinesisAPI, stream string, timeout int64, timestamp int64, count int) error {
-
+func processRawData(svc kinesisiface.KinesisAPI, stream string, timeout, timestamp int64, count int) error {
 	helper := ktail.New(svc, logger)
 
 	iterators, err := helper.GetStreamIterators(stream, timestamp)
@@ -153,7 +148,6 @@ func processRawData(svc kinesisiface.KinesisAPI, stream string, timeout int64, t
 
 LOOP:
 	for {
-
 		select {
 		case result := <-ch:
 			if result.Err != nil {
@@ -190,7 +184,6 @@ LOOP:
 			logger.Info("timer expired exit")
 			break LOOP
 		}
-
 	}
 
 	return nil

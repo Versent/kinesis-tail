@@ -13,8 +13,7 @@ import (
 )
 
 // UncompressLogs uncompress and parse cloudwatch log batch data
-func UncompressLogs(includes []string, excludes []string, ts *time.Time, data []byte) ([]*ktail.LogMessage, error) {
-
+func UncompressLogs(includes, excludes []string, ts *time.Time, data []byte) ([]*ktail.LogMessage, error) {
 	dataReader := bytes.NewReader(data)
 
 	gzipReader, err := gzip.NewReader(dataReader)
@@ -22,7 +21,6 @@ func UncompressLogs(includes []string, excludes []string, ts *time.Time, data []
 		return nil, errors.Wrap(err, "un gzip data failed")
 	}
 
-	// io.Copy(os.Stdout, gzipReader)
 	var batch ktail.LogBatch
 
 	err = json.NewDecoder(gzipReader).Decode(&batch)

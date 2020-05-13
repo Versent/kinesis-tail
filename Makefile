@@ -2,17 +2,15 @@ SOURCE_FILES?=$$(go list ./... | grep -v /vendor/)
 TEST_PATTERN?=.
 TEST_OPTIONS?=
 
+GOLANGCI_VERSION = 1.24.0
+
 GO ?= go
 
-# Install all the build and lint dependencies
-setup:
-	@$(GO) get -u github.com/alecthomas/gometalinter
-	@$(GO) get -u github.com/golang/dep/cmd/dep
-	@$(GO) get -u github.com/axw/gocov/...
-	@$(GO) get github.com/vektra/mockery/...
-	@gometalinter --install
-	@dep ensure
-.PHONY: setup
+bin/golangci-lint: bin/golangci-lint-${GOLANGCI_VERSION}
+	@ln -sf golangci-lint-${GOLANGCI_VERSION} bin/golangci-lint
+bin/golangci-lint-${GOLANGCI_VERSION}:
+	@curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | BINARY=golangci-lint bash -s -- v${GOLANGCI_VERSION}
+	@mv bin/golangci-lint $@
 
 # Install from source.
 install:
@@ -22,16 +20,18 @@ install:
 
 # Run all the tests
 test:
-	@gocov test -timeout=2m ./... | gocov report
+	@echo "==> Testing"
+	@go test -v -covermode=count -coverprofile=coverage.txt ./pkg/... ./cmd/...
 .PHONY: test
 
 # Run all the linters
-lint:
-	gometalinter --deadline 300s --vendor ./...
+lint: bin/golangci-lint
+	@echo "==> Linting"
+	@bin/golangci-lint run
 .PHONY: lint
 
 # Run all the tests and code checks
-ci: setup test lint
+ci: test lint
 .PHONY: ci
 
 # Release binaries to GitHub.
