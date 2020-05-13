@@ -10,6 +10,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	millisecondInNanoseconds = 1e6
+)
+
 // KinesisHelper simple helper for general high level kinesis operations
 type KinesisHelper struct {
 	svc    kinesisiface.KinesisAPI
@@ -31,7 +35,6 @@ func New(svc kinesisiface.KinesisAPI, logger *logrus.Logger) *KinesisHelper {
 
 // GetStreamIterators build a list of iterators for the stream
 func (kh *KinesisHelper) GetStreamIterators(streamName string, timestamp int64) (map[string]*string, error) {
-
 	ts := buildTimestamp(timestamp)
 
 	kh.logger.WithField("ts", ts.UnixNano()).Info("starting stream")
@@ -77,11 +80,10 @@ func (kh *KinesisHelper) asyncGetShardIterator(streamName, shardID string, ts ti
 }
 
 func buildTimestamp(timestamp int64) time.Time {
-
 	ts := time.Now()
 
 	if timestamp > 0 {
-		ts = time.Unix(0, timestamp*1e6)
+		ts = time.Unix(0, timestamp*millisecondInNanoseconds)
 	}
 
 	return ts

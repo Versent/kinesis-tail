@@ -41,7 +41,6 @@ func New(svc kinesisiface.KinesisAPI, iterators map[string]*string, pollFreqMs i
 
 // StartGetRecords intiate the streaming of records using the configured iterators
 func (ks *KinesisStreamer) StartGetRecords() chan *GetRecordsEntry {
-
 	ch := make(chan *GetRecordsEntry)
 
 	for key := range ks.iterators {
@@ -52,11 +51,9 @@ func (ks *KinesisStreamer) StartGetRecords() chan *GetRecordsEntry {
 }
 
 func (ks *KinesisStreamer) asyncGetRecords(shard string, ch chan *GetRecordsEntry) {
-
 	c := time.Tick(time.Duration(ks.pollFreqMs) * time.Millisecond)
 
 	for now := range c {
-
 		if ks.iterators[shard] == nil {
 			ks.logger.Debugf("nil iterator for shard as it is CLOSED: %s", shard)
 			continue

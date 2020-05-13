@@ -1,20 +1,16 @@
-# kinesis-tail [![Build Status](https://travis-ci.org/Versent/kinesis-tail.svg?branch=master)](https://travis-ci.org/Versent/kinesis-tail)
+# kinesis-tai
 
 Tool which provides tail for [Kinesis](https://aws.amazon.com/kinesis/streams/), it allows you to use one of two processors for the data returned, firstly one which decompresses and parses [CloudWatch Logs](http://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/WhatIsCloudWatchLogs.html) data, and secondly one which just returns the raw data.
 
 # background
 
-The cloudwatch logs reader is designed to work with a common pattern used at Versent for log distribution and storage.
+This cloudwatch logs reader works with a pattern used at Versent for log distribution and storage.
 
 For more information on the setup for `cwlogs` sub command to function it assumes the logs are gzipped batches of log JSON records in Kinesis see [Real-time Processing of Log Data with Subscriptions](http://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/CreateDestination.html)
 
 # installation
 
 You can download `kinesis-tail` from [Releases](https://github.com/Versent/kinesis-tail/releases) or install it using npm.
-
-```
-npm install @versent/kinesis-tail -g
-```
 
 # usage
 
